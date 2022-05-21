@@ -87,17 +87,18 @@ components:
           description: >-
             Omitting "after" means you query starting from the genesis block
 
+
             Note: the reason you have to specify both a tx hash AND a block hash
             in the "after" for pagination
 
             is because this is the only way to make sure your pagination doesn't
-            get affected by rollbacks
+            get affected by rollbacks.
 
             ex: a rollback could cause a tx to be removed from one block and
-            appear in a totally different block
+            appear in a totally different block.
 
             Specifying the block hash as well allows making sure you're
-            paginating on the right tx in the right block
+            paginating on the right tx in the right block.
       required:
         - untilBlock
       type: object
@@ -163,11 +164,9 @@ components:
             Note: an offset of -1 is treated the same as an offset of +1
 
 
-            It's usually best to avoid pagination on the latest block.
-
-
-            In Cardano, small rollbacks of 1~2 block are very frequent and
-            expected (read Ouroboros for why)
+            It's usually best to avoid pagination on the latest block as in
+            Cardano, small rollbacks of 1~2 block are very frequent and expected
+            (read Ouroboros for why)
 
             That means that using this block for pagination will often lead to
             your pagination being invalidated by a rollback
@@ -176,6 +175,32 @@ components:
             pagination
       required:
         - offset
+      type: object
+    Record_PolicyId.Record_AssetName.Cip25Metadata__:
+      properties: {}
+      type: object
+      description: Construct a type with a set of properties K of type T
+    Cip25Response:
+      properties:
+        cip25:
+          $ref: >-
+            #/components/schemas/Record_PolicyId.Record_AssetName.Cip25Metadata__
+      required:
+        - cip25
+      type: object
+    AssetName:
+      type: string
+    PolicyIdAssetMapType:
+      properties:
+        assets:
+          properties: {}
+          additionalProperties:
+            items:
+              $ref: '#/components/schemas/AssetName'
+            type: array
+          type: object
+      required:
+        - assets
       type: object
     BlockInfo:
       properties:
@@ -343,6 +368,7 @@ paths:
       description: >-
         Ordered lexicographically (order is not maintained)
 
+
         Note: this endpoint only returns addresses that are in a block. Use
         another tool to see mempool information
       security: []
@@ -386,6 +412,61 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/BlockLatestRequest'
+  /metadata/nft:
+    post:
+      operationId: MetadataNft
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cip25Response'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '428':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Gets the CIP25 metadata for given <policy, asset_name> pairs
+
+
+        Note: policy IDs and asset names MUST be in hex strings. Do not use UTF8
+        asset names.
+
+
+        Note: This endpoint returns the NFT metadata as a CBOR object and NOT
+        JSON.
+
+        You may expect a JSON object, but actually Cardano has no concept of
+        on-chain JSON.
+
+        In fact, on-chain JSON is not even possible!
+
+        Instead, Cardano stores metadata as CBOR which can then be converted to
+        JSON
+
+        The conversion of CBOR to JSON is project-dependent, and so Carp instead
+        returns the raw cbor
+
+        It's up to you to choose how you want to do the JSON conversion.
+
+        The common case is handled inside the Carp client library.
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicyIdAssetMapType'
   /transaction/history:
     post:
       operationId: TransactionHistory
@@ -410,6 +491,7 @@ paths:
                 $ref: '#/components/schemas/ErrorShape'
       description: >-
         Ordered by `<block.height, transaction.tx_index>`
+
 
         Note: this endpoint only returns txs that are in a block. Use another
         tool to see mempool for txs not in a block
