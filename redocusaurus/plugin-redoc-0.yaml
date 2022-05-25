@@ -207,6 +207,7 @@ components:
           properties:
             hasNextPage:
               type: boolean
+              example: false
           required:
             - hasNextPage
           type: object
